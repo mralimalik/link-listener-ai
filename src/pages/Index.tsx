@@ -1,10 +1,11 @@
 import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, ChevronLeft, ExternalLink } from 'lucide-react';
+import { Sparkles, ChevronLeft, ExternalLink, Zap } from 'lucide-react';
 import { LinkInput } from '@/components/LinkInput';
 import { AnalyzingAnimation } from '@/components/AnalyzingAnimation';
 import { VoiceOrb } from '@/components/VoiceOrb';
 import { BackgroundEffects } from '@/components/BackgroundEffects';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { firecrawlApi } from '@/lib/api/firecrawl';
 import { RealtimeChat } from '@/utils/RealtimeAudio';
@@ -26,20 +27,18 @@ const Index = () => {
     setAppState('analyzing');
     setProgress(0);
 
-    // Simulate progress while scraping
     const progressInterval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 90) {
           clearInterval(progressInterval);
           return 90;
         }
-        return prev + Math.random() * 15;
+        return prev + Math.random() * 12;
       });
-    }, 500);
+    }, 600);
 
     try {
       const result = await firecrawlApi.scrapeMultiple(urls);
-
       clearInterval(progressInterval);
 
       if (result.success && result.data) {
@@ -48,16 +47,13 @@ const Index = () => {
         setScrapedUrls(urls);
         
         toast({
-          title: "Analysis Complete!",
-          description: `Successfully analyzed ${result.data.successCount} of ${result.data.totalCount} pages.`,
+          title: "Analysis complete",
+          description: `Loaded ${result.data.successCount} of ${result.data.totalCount} pages`,
         });
 
-        // Short delay to show 100% before transitioning
-        setTimeout(() => {
-          setAppState('ready');
-        }, 500);
+        setTimeout(() => setAppState('ready'), 400);
       } else {
-        throw new Error(result.error || 'Failed to analyze content');
+        throw new Error(result.error || 'Failed to analyze');
       }
     } catch (error) {
       clearInterval(progressInterval);
@@ -65,8 +61,8 @@ const Index = () => {
       setAppState('input');
       
       toast({
-        title: "Analysis Failed",
-        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        title: "Something went wrong",
+        description: error instanceof Error ? error.message : 'Please try again',
         variant: "destructive",
       });
     }
@@ -76,12 +72,9 @@ const Index = () => {
     setVoiceState('connecting');
 
     try {
-      // Request microphone permission first
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
       chatRef.current = new RealtimeChat((event) => {
-        console.log('Voice event:', event);
-        
         if (event.type === 'response.audio.delta' || event.type === 'response.audio_transcript.delta') {
           setVoiceState('speaking');
         } else if (event.type === 'response.audio.done' || event.type === 'response.done') {
@@ -97,16 +90,14 @@ const Index = () => {
       setVoiceState('listening');
 
       toast({
-        title: "Connected!",
-        description: "Start speaking to ask questions about the content.",
+        title: "Connected",
+        description: "Start speaking to ask questions",
       });
     } catch (error) {
-      console.error('Error connecting:', error);
       setVoiceState('idle');
-      
       toast({
-        title: "Connection Failed",
-        description: error instanceof Error ? error.message : 'Failed to connect to voice agent',
+        title: "Connection failed",
+        description: error instanceof Error ? error.message : 'Please try again',
         variant: "destructive",
       });
     }
@@ -114,18 +105,10 @@ const Index = () => {
 
   const handleDisconnect = useCallback(() => {
     setVoiceState('disconnecting');
-    
     chatRef.current?.disconnect();
     chatRef.current = null;
-    
-    setTimeout(() => {
-      setVoiceState('idle');
-    }, 500);
-
-    toast({
-      title: "Disconnected",
-      description: "Voice session ended.",
-    });
+    setTimeout(() => setVoiceState('idle'), 300);
+    toast({ title: "Call ended" });
   }, [toast]);
 
   const handleReset = () => {
@@ -149,37 +132,40 @@ const Index = () => {
           animate={{ opacity: 1, x: 0 }}
           className="flex items-center gap-3"
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-glow-cyan to-glow-purple flex items-center justify-center glow-cyan">
-            <Zap className="w-5 h-5 text-primary-foreground" />
+          <div className="w-9 h-9 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg shadow-primary/25">
+            <Zap className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gradient">VoiceLink AI</h1>
-            <p className="text-xs text-muted-foreground">Knowledge-powered voice agent</p>
+            <h1 className="text-lg font-semibold text-foreground">VoiceLink</h1>
           </div>
         </motion.div>
 
-        <AnimatePresence>
-          {appState === 'ready' && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-            >
-              <Button
-                variant="outline"
-                onClick={handleReset}
-                className="border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
+        <div className="flex items-center gap-3">
+          <AnimatePresence>
+            {appState === 'ready' && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
               >
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                New Analysis
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleReset}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  New
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <ThemeToggle />
+        </div>
       </header>
 
-      {/* Main content */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pb-12">
+      {/* Main */}
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pb-20">
         <AnimatePresence mode="wait">
           {appState === 'input' && (
             <motion.div
@@ -187,25 +173,38 @@ const Index = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0, y: -20 }}
-              className="w-full"
+              className="w-full max-w-xl"
             >
-              <div className="text-center mb-12">
-                <motion.h2
-                  className="text-4xl md:text-5xl font-bold mb-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  <span className="text-gradient">Talk to Any Website</span>
-                </motion.h2>
-                <motion.p
-                  className="text-lg text-muted-foreground max-w-xl mx-auto"
+              <div className="text-center mb-10">
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-subtle border border-primary/10 text-xs font-medium text-primary mb-5"
                 >
-                  Add links, let AI analyze the content, then have a natural voice conversation about it.
+                  <Sparkles className="w-3.5 h-3.5" />
+                  AI-Powered Voice Chat
+                </motion.div>
+                
+                <motion.h1
+                  className="text-3xl sm:text-4xl font-bold text-foreground mb-3"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                >
+                  Talk to any website
+                </motion.h1>
+                
+                <motion.p
+                  className="text-muted-foreground text-base max-w-md mx-auto"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  Add links, let AI analyze them, then have a natural voice conversation about the content.
                 </motion.p>
               </div>
+
               <LinkInput onAnalyze={handleAnalyze} isAnalyzing={false} />
             </motion.div>
           )}
@@ -213,9 +212,9 @@ const Index = () => {
           {appState === 'analyzing' && (
             <motion.div
               key="analyzing"
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
+              exit={{ opacity: 0, scale: 0.95 }}
             >
               <AnalyzingAnimation progress={Math.round(progress)} />
             </motion.div>
@@ -224,48 +223,53 @@ const Index = () => {
           {appState === 'ready' && (
             <motion.div
               key="ready"
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
+              exit={{ opacity: 0, scale: 0.95 }}
               className="flex flex-col items-center"
             >
               <motion.div
-                initial={{ opacity: 0, y: -20 }}
+                initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-center mb-8"
+                className="text-center mb-6"
               >
-                <h2 className="text-2xl font-semibold text-foreground mb-2">
-                  AI is Ready to Chat
+                <h2 className="text-xl font-semibold text-foreground mb-1">
+                  Ready to chat
                 </h2>
-                <p className="text-muted-foreground">
-                  Knowledge loaded from {scrapedUrls.length} source{scrapedUrls.length > 1 ? 's' : ''}
+                <p className="text-sm text-muted-foreground">
+                  {scrapedUrls.length} source{scrapedUrls.length > 1 ? 's' : ''} loaded
                 </p>
               </motion.div>
 
-              {/* Sources pills */}
+              {/* Source pills */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="flex flex-wrap justify-center gap-2 mb-12 max-w-2xl"
+                transition={{ delay: 0.15 }}
+                className="flex flex-wrap justify-center gap-2 mb-10 max-w-md"
               >
-                {scrapedUrls.map((url, i) => (
+                {scrapedUrls.slice(0, 4).map((url, i) => (
                   <motion.a
                     key={i}
-                    href={url}
+                    href={url.startsWith('http') ? url : `https://${url}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    initial={{ opacity: 0, scale: 0.8 }}
+                    initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.3 + i * 0.1 }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-secondary/50 border border-border rounded-full text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
+                    transition={{ delay: 0.2 + i * 0.05 }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-secondary hover:bg-secondary/80 rounded-full text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    <span className="truncate max-w-[200px]">
+                    <span className="truncate max-w-[140px]">
                       {new URL(url.startsWith('http') ? url : `https://${url}`).hostname}
                     </span>
-                    <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                    <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50" />
                   </motion.a>
                 ))}
+                {scrapedUrls.length > 4 && (
+                  <span className="px-3 py-1.5 text-xs text-muted-foreground">
+                    +{scrapedUrls.length - 4} more
+                  </span>
+                )}
               </motion.div>
 
               <VoiceOrb
@@ -277,13 +281,6 @@ const Index = () => {
           )}
         </AnimatePresence>
       </main>
-
-      {/* Footer */}
-      <footer className="relative z-10 p-6 text-center">
-        <p className="text-xs text-muted-foreground/50">
-          Powered by AI • Built with Lovable
-        </p>
-      </footer>
     </div>
   );
 };
