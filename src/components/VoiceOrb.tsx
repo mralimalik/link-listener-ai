@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, PhoneOff, Mic, MicOff } from 'lucide-react';
+import { Phone, PhoneOff, Mic } from 'lucide-react';
 
 type VoiceState = 'idle' | 'connecting' | 'listening' | 'speaking' | 'disconnecting';
 
@@ -17,63 +17,58 @@ export const VoiceOrb = ({ state, onConnect, onDisconnect }: VoiceOrbProps) => {
 
   const getStatusText = () => {
     switch (state) {
-      case 'idle': return 'Ready to Talk';
+      case 'idle': return 'Tap to start';
       case 'connecting': return 'Connecting...';
       case 'listening': return 'Listening...';
-      case 'speaking': return 'Speaking...';
-      case 'disconnecting': return 'Disconnecting...';
+      case 'speaking': return 'AI Speaking...';
+      case 'disconnecting': return 'Ending...';
       default: return '';
     }
   };
 
-  const getOrbColor = () => {
-    switch (state) {
-      case 'speaking': return 'from-glow-purple via-glow-cyan to-glow-purple';
-      case 'listening': return 'from-glow-cyan via-glow-green to-glow-cyan';
-      case 'connecting':
-      case 'disconnecting': return 'from-amber-500 via-orange-500 to-amber-500';
-      default: return 'from-glow-cyan via-glow-purple to-glow-cyan';
-    }
+  const getOrbGradient = () => {
+    if (isSpeaking) return 'from-violet-500 via-purple-500 to-fuchsia-500';
+    if (isListening) return 'from-emerald-500 via-teal-500 to-cyan-500';
+    if (isConnecting) return 'from-amber-500 via-orange-500 to-red-500';
+    return 'from-violet-500 via-purple-500 to-pink-500';
   };
 
   const getGlowClass = () => {
-    switch (state) {
-      case 'speaking': return 'glow-purple';
-      case 'listening': return 'glow-green';
-      default: return 'glow-cyan';
-    }
+    if (isSpeaking) return 'glow-accent';
+    if (isListening) return 'glow-emerald';
+    return 'glow-primary';
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
+      initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
+      transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
       className="flex flex-col items-center space-y-8"
     >
-      {/* Main voice orb container */}
+      {/* Orb container */}
       <div className="relative">
-        {/* Outer pulse rings when active */}
+        {/* Pulse rings when active */}
         <AnimatePresence>
           {isActive && (
             <>
               {[...Array(3)].map((_, i) => (
                 <motion.div
                   key={`ring-${i}`}
-                  className={`absolute inset-0 rounded-full border-2 ${
-                    isSpeaking ? 'border-glow-purple/40' : 
-                    isListening ? 'border-glow-green/40' : 
-                    'border-glow-cyan/40'
+                  className={`absolute inset-0 rounded-full border ${
+                    isSpeaking ? 'border-accent/30' : 
+                    isListening ? 'border-emerald-500/30' : 
+                    'border-primary/30'
                   }`}
                   initial={{ scale: 1, opacity: 0 }}
                   animate={{
-                    scale: [1, 1.8 + i * 0.3],
-                    opacity: [0.5, 0],
+                    scale: [1, 2 + i * 0.4],
+                    opacity: [0.6, 0],
                   }}
                   transition={{
-                    duration: isSpeaking ? 0.8 : 1.5,
+                    duration: isSpeaking ? 0.6 : 1.5,
                     repeat: Infinity,
-                    delay: i * (isSpeaking ? 0.2 : 0.4),
+                    delay: i * 0.3,
                     ease: "easeOut",
                   }}
                 />
@@ -82,26 +77,26 @@ export const VoiceOrb = ({ state, onConnect, onDisconnect }: VoiceOrbProps) => {
           )}
         </AnimatePresence>
 
-        {/* Audio wave bars for speaking */}
+        {/* Sound wave bars when speaking */}
         <AnimatePresence>
           {isSpeaking && (
             <motion.div
-              className="absolute inset-0 flex items-center justify-center"
+              className="absolute inset-0 flex items-center justify-center gap-1"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
               {[...Array(5)].map((_, i) => (
                 <motion.div
-                  key={`wave-${i}`}
-                  className="w-1 mx-0.5 bg-glow-purple rounded-full"
+                  key={`bar-${i}`}
+                  className="w-1 bg-white/80 rounded-full"
                   animate={{
-                    height: [16, 40 + Math.random() * 20, 16],
+                    height: [12, 32 + Math.random() * 20, 12],
                   }}
                   transition={{
-                    duration: 0.4,
+                    duration: 0.3 + Math.random() * 0.2,
                     repeat: Infinity,
-                    delay: i * 0.1,
+                    delay: i * 0.08,
                     ease: "easeInOut",
                   }}
                 />
@@ -114,91 +109,75 @@ export const VoiceOrb = ({ state, onConnect, onDisconnect }: VoiceOrbProps) => {
         <motion.button
           onClick={isActive ? onDisconnect : onConnect}
           disabled={isConnecting || state === 'disconnecting'}
-          className={`relative w-40 h-40 rounded-full bg-gradient-to-br ${getOrbColor()} ${getGlowClass()} transition-all duration-300 flex items-center justify-center disabled:cursor-not-allowed`}
+          className={`relative w-28 h-28 rounded-full bg-gradient-to-br ${getOrbGradient()} ${getGlowClass()} transition-all duration-300 flex items-center justify-center disabled:cursor-not-allowed shadow-2xl`}
           whileHover={{ scale: isActive ? 1 : 1.05 }}
           whileTap={{ scale: 0.95 }}
           animate={isActive ? {
-            scale: isSpeaking ? [1, 1.1, 1] : [1, 1.02, 1],
+            scale: isSpeaking ? [1, 1.08, 1] : [1, 1.03, 1],
           } : {}}
           transition={{
-            duration: isSpeaking ? 0.4 : 1.5,
+            duration: isSpeaking ? 0.3 : 2,
             repeat: isActive ? Infinity : 0,
             ease: "easeInOut",
           }}
         >
-          {/* Inner gradient overlay */}
-          <motion.div
-            className="absolute inset-2 rounded-full bg-gradient-to-t from-transparent via-white/10 to-white/20"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-          />
+          {/* Shine overlay */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-transparent to-white/25" />
 
           {/* Icon */}
           <AnimatePresence mode="wait">
             <motion.div
               key={state}
-              initial={{ scale: 0, rotate: -180 }}
+              initial={{ scale: 0, rotate: -90 }}
               animate={{ scale: 1, rotate: 0 }}
-              exit={{ scale: 0, rotate: 180 }}
-              transition={{ duration: 0.3 }}
+              exit={{ scale: 0, rotate: 90 }}
+              transition={{ duration: 0.2 }}
               className="relative z-10"
             >
               {isActive ? (
-                state === 'listening' ? (
-                  <Mic className="w-12 h-12 text-primary-foreground" />
-                ) : state === 'speaking' ? (
-                  <Mic className="w-12 h-12 text-primary-foreground" />
+                isListening || isSpeaking ? (
+                  <Mic className="w-8 h-8 text-white" />
                 ) : (
-                  <PhoneOff className="w-12 h-12 text-primary-foreground" />
+                  <PhoneOff className="w-8 h-8 text-white" />
                 )
               ) : (
-                <Phone className="w-12 h-12 text-primary-foreground" />
+                <Phone className="w-8 h-8 text-white" />
               )}
             </motion.div>
           </AnimatePresence>
         </motion.button>
       </div>
 
-      {/* Status indicator */}
-      <motion.div
-        className="flex items-center space-x-3"
-        animate={{ opacity: 1 }}
-      >
-        <motion.div
-          className={`w-3 h-3 rounded-full ${
-            isSpeaking ? 'bg-glow-purple' :
-            isListening ? 'bg-glow-green' :
-            isConnecting ? 'bg-amber-500' :
-            'bg-glow-cyan'
-          }`}
-          animate={{
-            scale: isActive ? [1, 1.3, 1] : 1,
-            opacity: isActive ? [1, 0.6, 1] : 1,
-          }}
-          transition={{
-            duration: 1,
-            repeat: isActive ? Infinity : 0,
-          }}
-        />
-        <motion.span
-          key={state}
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="text-lg font-medium text-foreground"
-        >
-          {getStatusText()}
-        </motion.span>
+      {/* Status */}
+      <motion.div className="flex flex-col items-center gap-2">
+        <div className="flex items-center gap-2">
+          <motion.div
+            className={`w-2 h-2 rounded-full ${
+              isSpeaking ? 'bg-accent' :
+              isListening ? 'bg-emerald-500' :
+              isConnecting ? 'bg-amber-500' :
+              'bg-primary'
+            }`}
+            animate={{
+              scale: isActive ? [1, 1.5, 1] : 1,
+              opacity: isActive ? [1, 0.5, 1] : 1,
+            }}
+            transition={{ duration: 1, repeat: isActive ? Infinity : 0 }}
+          />
+          <motion.span
+            key={state}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-sm font-medium text-foreground"
+          >
+            {getStatusText()}
+          </motion.span>
+        </div>
+        
+        <p className="text-xs text-muted-foreground">
+          {isActive ? 'Click to end call' : 'Start voice conversation'}
+        </p>
       </motion.div>
-
-      {/* Action hint */}
-      <motion.p
-        className="text-sm text-muted-foreground"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-      >
-        {isActive ? 'Click to disconnect' : 'Click to start talking'}
-      </motion.p>
     </motion.div>
   );
 };
