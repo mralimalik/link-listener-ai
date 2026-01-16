@@ -1,9 +1,28 @@
 import type { Config } from "tailwindcss";
+import defaultColors from "tailwindcss/colors";
 
 export default {
   darkMode: ["class"],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",
+  // Safelist to ensure gradient colors are never purged
+  safelist: [
+    {
+      pattern: /from-(violet|purple|fuchsia|pink|indigo|emerald|teal|cyan|amber|orange|red)-(50|100|200|300|400|500|600|700|800|900|950)/,
+    },
+    {
+      pattern: /via-(violet|purple|fuchsia|pink|indigo|emerald|teal|cyan|amber|orange|red)-(50|100|200|300|400|500|600|700|800|900|950)/,
+    },
+    {
+      pattern: /to-(violet|purple|fuchsia|pink|indigo|emerald|teal|cyan|amber|orange|red)-(50|100|200|300|400|500|600|700|800|900|950)/,
+    },
+    {
+      pattern: /bg-(violet|purple|fuchsia|pink|indigo|emerald|teal|cyan|amber|orange|red)-(50|100|200|300|400|500|600|700|800|900|950)/,
+    },
+    {
+      pattern: /border-(violet|purple|fuchsia|pink|indigo|emerald|teal|cyan|amber|orange|red)-(50|100|200|300|400|500|600|700|800|900|950)/,
+    },
+  ],
   theme: {
     container: {
       center: true,
@@ -18,6 +37,19 @@ export default {
         mono: ['JetBrains Mono', 'monospace'],
       },
       colors: {
+        // Preserve default Tailwind color palettes
+        violet: defaultColors.violet,
+        purple: defaultColors.purple,
+        fuchsia: defaultColors.fuchsia,
+        pink: defaultColors.pink,
+        indigo: defaultColors.indigo,
+        emerald: defaultColors.emerald,
+        teal: defaultColors.teal,
+        cyan: defaultColors.cyan,
+        amber: defaultColors.amber,
+        orange: defaultColors.orange,
+        red: defaultColors.red,
+        // Semantic design tokens
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -61,9 +93,6 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        violet: "hsl(var(--violet))",
-        indigo: "hsl(var(--indigo))",
-        emerald: "hsl(var(--emerald))",
       },
       borderRadius: {
         lg: "var(--radius)",
